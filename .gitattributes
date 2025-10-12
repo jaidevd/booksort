@@ -1,0 +1,4 @@
+*.jpg filter=lfs diff=lfs merge=lfs -text
+test_masked.jpg filter=lfs diff=lfs merge=lfs -text
+test.jpg filter=lfs diff=lfs merge=lfs -text
+test.jpg.json filter=lfs diff=lfs merge=lfs -text
