@@ -1,12 +1,31 @@
-from ultralytics import YOLO
 import numpy as np
 import json
 import os.path as op
+import pandas as pd
+import requests
+from ultralytics import YOLO
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.ai.documentintelligence.models import AnalyzeResult
+import hashlib
 
 model = YOLO("yolov8n-seg.pt")  # COCO-pretrained, includes "book"
+
+
+def search(query: str, key: str) -> dict:
+    response = requests.get(
+        "https://www.googleapis.com/books/v1/volumes",
+        params={
+            "q": query,
+            "orderBy": "relevance",
+            "maxResults": 5,
+            "projection": "full",
+            "key": key,
+        },
+        timeout=10,
+    )
+    response.raise_for_status()
+    return response.json()
 
 
 def detect_books(img_path, model):
@@ -21,7 +40,7 @@ def detect_books(img_path, model):
         book_id = 73  # COCO class ID for "book"
         for m, c, p, box in zip(masks, classes, confs, boxes):
             if c == book_id and p > 0.5:
-                books.append(box.numpy())
+                books.append(box.cpu().numpy())
     return np.array(books)
 
 
@@ -58,10 +77,12 @@ def match_text_to_books(book_boxes: np.ndarray, text_boxes: np.ndarray) -> np.nd
     return best
 
 
-def ocr(img_path, di_client, cache=True):
+def ocr(img_path, di_client=None, cache=True):
     cache_path = img_path + ".json"
     boxes, texts = [], []
     if not op.exists(cache_path):
+        if di_client is None:
+            raise ValueError("di_client must be provided if no cache exists.")
         with open(img_path, "rb") as f:
             poller = di_client.begin_analyze_document("prebuilt-read", body=f)
         result = poller.result()
@@ -71,22 +92,44 @@ def ocr(img_path, di_client, cache=True):
     else:
         with open(cache_path, "r") as fin:
             result = AnalyzeResult(json.load(fin))
-    print(len(result.paragraphs))
     for para in result.paragraphs:
         texts.append(para.content)
         boxes.append(para.bounding_regions[0].polygon)
-    print(len(boxes), len(texts))
     return _polygon2bbox(np.array(boxes)), texts
+
+def sha256(content):
+    checksum = hashlib.md5()
+    checksum.update(content)
+    return checksum.hexdigest()
 
 
 if __name__ == "__main__":
+    key = "API_KEY_HERE"
+    if op.exists(".secrets.json"):
+        with open(".secrets.json", "r") as fin:
+            secrets = json.load(fin)
 
-    with open(".secrets.json", "r") as fin:
-        secrets = json.load(fin)
-
-    credential = AzureKeyCredential(secrets["AZURE_API_KEY"])
-    di_client = DocumentIntelligenceClient(secrets["AZURE_DI_ENDPOINT"], credential)
+        credential = AzureKeyCredential(secrets["AZURE_API_KEY"])
+        di_client = DocumentIntelligenceClient(secrets["AZURE_DI_ENDPOINT"], credential)
+    else:
+        di_client = None
 
     book_boxes = detect_books("test.jpg", model)
     text_boxes, texts = ocr("test.jpg", di_client)
     assigned = match_text_to_books(book_boxes, text_boxes)
+    df = pd.DataFrame({"text": texts, "book_id": assigned})
+    grouped_texts = df.groupby("book_id")["text"].apply(lambda x: " ".join(x))
+    grouped_texts = grouped_texts[grouped_texts.index >= 0]
+    for text in grouped_texts:
+        result = search(text, key)
+        item = result.get("items", [False])[0]
+        if not item:
+            print(f"No results found for {text}")
+            continue
+        vinfo = item["volumeInfo"]
+        print(vinfo["title"], vinfo.get("authors", []))
+        resp = requests.get(
+            f'https://www.googleapis.com/books/v1/volumes/{item["id"]}',
+            params={"projection": "full", "key": key},
+        ).json()
+        print(resp['volumeInfo'].get('dimensions', {}))
