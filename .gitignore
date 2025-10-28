@@ -3,3 +3,5 @@
 *.jpg
 ocr_cache/*.json
 result_cache/*.json
+__pycache__/**
+.ipynb_checkpoints/**
