@@ -1,3 +1,5 @@
 .secrets.json
 *.pt
 *.jpg
+ocr_cache/*.json
+result_cache/*.json
