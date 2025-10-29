@@ -4,3 +4,8 @@ test.jpg filter=lfs diff=lfs merge=lfs -text
 test.jpg.json filter=lfs diff=lfs merge=lfs -text
 **/*.jpg filter=lfs diff=lfs merge=lfs -text
 ocr_cache/*.json filter=lfs diff=lfs merge=lfs -text
+labels/test.json filter=lfs diff=lfs merge=lfs -text
+labels/IMG_20180106_190653.json filter=lfs diff=lfs merge=lfs -text
+labels/IMG_20180106_190712.json filter=lfs diff=lfs merge=lfs -text
+labels/IMG_20231210_192150.json filter=lfs diff=lfs merge=lfs -text
+labels/IMG_20240210_151856.json filter=lfs diff=lfs merge=lfs -text

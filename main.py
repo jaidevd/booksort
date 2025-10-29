@@ -16,7 +16,7 @@ from tqdm import tqdm
 import warnings
 from sklearn.metrics.pairwise import paired_distances
 
-model = YOLO("yolo11n-seg.pt", task="segment")  # COCO-pretrained, includes "book"
+model = YOLO("yolo11x-seg.pt", task="segment")  # COCO-pretrained, includes "book"
 op = os.path
 
 
