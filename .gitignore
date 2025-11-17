@@ -7,3 +7,5 @@ __pycache__/**
 .ipynb_checkpoints/**
 *dataset/*
 runs/
+book_detections/
+book_highlights/
