@@ -15,11 +15,11 @@ dependencies = [
     "azure-ai-documentintelligence (>=1.0.2,<2.0.0)",
     "matplotlib (>=3.10.7,<4.0.0)",
     "scikit-learn (>=1.7.2,<2.0.0)",
-    "pandas (>=2.3.3,<3.0.0)",
-    "tqdm (>=4.67.1,<5.0.0)",
-    "pillow (>=10.4.0,<11.0.0)",
-    "torch (>=2.9.0,<3.0.0)",
-    "torchvision (>=0.24.0,<0.25.0)",
+"pandas (>=2.3.3,<3.0.0)",
+"tqdm (>=4.67.1,<5.0.0)",
+"pillow (>=10.4.0,<11.0.0)",
+"torch (>=2.9.0,<3.0.0); sys_platform != 'linux'",
+"torchvision (>=0.24.0,<0.25.0); sys_platform != 'linux'",
     "ultralytics (>=8.3.221,<9.0.0)",
     "ipdb (>=0.13.13,<0.14.0)",
     "ipython (>=9.6.0,<10.0.0)",
@@ -37,8 +37,8 @@ priority = "explicit"
 
 
 [tool.poetry.dependencies]
-torch = {source = "cu126"}
-torchvision = {source = "cu126"}
+torch = {source = "cu126", markers = "sys_platform == 'linux'"}
+torchvision = {source = "cu126", markers = "sys_platform == 'linux'"}
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
