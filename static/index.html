@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BookSort Shelf Uploader</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: rgba(255, 255, 255, 0.08);
+      --panel-strong: rgba(255, 255, 255, 0.12);
+      --accent: #a1e8af;
+      --accent-2: #7dd3fc;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --danger: #f87171;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at 10% 20%, rgba(125, 211, 252, 0.16), transparent 28%),
+                  radial-gradient(circle at 80% 10%, rgba(161, 232, 175, 0.18), transparent 25%),
+                  linear-gradient(135deg, #0b1021 0%, #0f172a 45%, #0b132b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 18px 42px;
+    }
+
+    .frame {
+      width: min(960px, 100%);
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 22px;
+      padding: 28px 24px;
+      backdrop-filter: blur(8px);
+      box-shadow: var(--shadow);
+    }
+
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .title {
+      font-size: clamp(24px, 4vw, 32px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+
+    .tagline {
+      color: var(--muted);
+      margin: 6px 0 0;
+      max-width: 520px;
+      line-height: 1.5;
+    }
+
+    .pill {
+      background: linear-gradient(120deg, rgba(161, 232, 175, 0.16), rgba(125, 211, 252, 0.14));
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .content {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: 2fr 1fr;
+    }
+
+    .panel {
+      background: var(--panel-strong);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .dropzone {
+      position: relative;
+      border: 2px dashed rgba(255, 255, 255, 0.18);
+      border-radius: 16px;
+      padding: 18px;
+      min-height: 210px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      gap: 12px;
+      transition: border-color 150ms ease, background 150ms ease;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .dropzone.hover {
+      border-color: var(--accent-2);
+      background: rgba(125, 211, 252, 0.06);
+    }
+
+    .dropzone input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .drop-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .drop-copy strong {
+      font-size: 18px;
+    }
+
+    .drop-copy span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    button,
+    .ghost-btn {
+      font-family: inherit;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+    }
+
+    .primary {
+      background: linear-gradient(120deg, #7dd3fc, #a1e8af);
+      color: #0b1222;
+      padding: 12px 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .primary:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .ghost-btn {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    button:hover:not(:disabled),
+    .ghost-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+    }
+
+    .file-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .file-item {
+      background: rgba(255, 255, 255, 0.04);
+      padding: 10px 12px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .file-item span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: block;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .pill-sm {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(125, 211, 252, 0.12);
+      color: var(--text);
+      font-size: 12px;
+      border: 1px solid rgba(125, 211, 252, 0.18);
+    }
+
+    .status {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 10px;
+      min-height: 20px;
+    }
+
+    .status strong {
+      color: var(--text);
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    .results {
+      display: grid;
+      gap: 10px;
+    }
+
+    .result-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .result-card strong {
+      font-size: 15px;
+    }
+
+    .chip {
+      padding: 6px 10px;
+      background: rgba(161, 232, 175, 0.14);
+      border-radius: 999px;
+      border: 1px solid rgba(161, 232, 175, 0.3);
+      color: #052e16;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .data-preview {
+      margin-top: 6px;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 10px;
+      padding: 10px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    @media (max-width: 900px) {
+      .content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 540px) {
+      body {
+        padding: 20px 14px 28px;
+      }
+
+      .frame {
+        padding: 20px 16px;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .primary,
+      .ghost-btn {
+        width: 100%;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="frame">
+    <header>
+      <div>
+        <h1 class="title">BookSort Shelf Uploader</h1>
+        <p class="tagline">Capture photos of your shelves from your phone, send them to BookSort, and get every title clustered into the right shelf.</p>
+      </div>
+      <div class="pill">Camera-ready · Batch uploads</div>
+    </header>
+
+    <div class="content">
+      <section class="panel">
+        <form id="shelf-form">
+          <div class="dropzone" id="drop-zone">
+            <input id="shelf-input" name="files" type="file" accept="image/*" capture="environment" multiple />
+            <div class="drop-copy">
+              <strong>Tap to add shelf photos</strong>
+              <span>Use your camera or gallery — the number of files becomes the number of shelves.</span>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="primary" id="upload-btn" type="submit">Send to /shelves</button>
+            <button class="ghost-btn" type="button" id="add-more">Add or retake photos</button>
+          </div>
+          <div class="status" id="status-msg"></div>
+        </form>
+
+        <ul class="file-list" id="file-list"></ul>
+      </section>
+
+      <aside class="panel results">
+        <div class="result-card">
+          <div>
+            <strong>Status</strong>
+            <div class="status" id="result-status">Waiting for uploads…</div>
+          </div>
+        </div>
+        <div class="result-card">
+          <div>
+            <strong>Latest response</strong>
+            <div class="data-preview" id="result-data">No data yet.</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const fileInput = document.getElementById("shelf-input");
+    const form = document.getElementById("shelf-form");
+    const statusMsg = document.getElementById("status-msg");
+    const resultStatus = document.getElementById("result-status");
+    const resultData = document.getElementById("result-data");
+    const fileList = document.getElementById("file-list");
+    const uploadBtn = document.getElementById("upload-btn");
+    const addMoreBtn = document.getElementById("add-more");
+    const dropZone = document.getElementById("drop-zone");
+
+    function humanFileSize(size) {
+      if (!size && size !== 0) return "";
+      const units = ["B", "KB", "MB", "GB"];
+      const i = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1);
+      return `${(size / 1024 ** i).toFixed(1)} ${units[i]}`;
+    }
+
+    function renderFiles(files) {
+      fileList.innerHTML = "";
+      if (!files.length) {
+        fileList.innerHTML = '<li class="file-item"><span>No photos selected yet.</span></li>';
+        return;
+      }
+
+      Array.from(files).forEach((file, idx) => {
+        const item = document.createElement("li");
+        item.className = "file-item";
+        item.innerHTML = `<span>${idx + 1}. ${file.name}</span><div class="pill-sm">${humanFileSize(file.size)}</div>`;
+        fileList.appendChild(item);
+      });
+    }
+
+    function setStatus(message, type = "") {
+      statusMsg.textContent = message;
+      statusMsg.className = type ? `status ${type}` : "status";
+    }
+
+    function setResultStatus(message, isError = false) {
+      resultStatus.textContent = message;
+      resultStatus.className = isError ? "status error" : "status";
+    }
+
+    function showResultData(payload) {
+      if (!payload) {
+        resultData.textContent = "No data yet.";
+        return;
+      }
+      const summary = [
+        `shelf_count: ${payload.shelf_count ?? "?"}`,
+        `total_books: ${payload.total_books ?? "?"}`
+      ].join("\\n");
+      const sample = (payload.books || []).slice(0, 5).map((book, idx) => `${idx + 1}. ${book.title || book.text || "Unknown title"}`).join("\\n");
+      resultData.textContent = `${summary}${sample ? "\\nbooks:\\n" + sample : ""}`;
+    }
+
+    addMoreBtn.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", (event) => {
+      renderFiles(event.target.files);
+      setStatus(event.target.files.length ? "Ready to upload." : "");
+    });
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropZone.classList.add("hover");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropZone.classList.remove("hover");
+      });
+    });
+
+    dropZone.addEventListener("drop", (event) => {
+      const dropped = event.dataTransfer.files;
+      if (dropped && dropped.length) {
+        fileInput.files = dropped;
+        renderFiles(dropped);
+        setStatus("Ready to upload.");
+      }
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const files = fileInput.files;
+      if (!files || !files.length) {
+        setStatus("Add at least one shelf photo before sending.", "error");
+        return;
+      }
+
+      uploadBtn.disabled = true;
+      setStatus("Uploading to /shelves…");
+      setResultStatus("Uploading…");
+
+      const formData = new FormData();
+      Array.from(files).forEach((file) => formData.append("files", file));
+
+      try {
+        const response = await fetch("/shelves", {
+          method: "POST",
+          body: formData,
+        });
+        const payload = await response.json();
+
+        if (!response.ok) {
+          const detail = payload?.detail || "Upload failed.";
+          throw new Error(detail);
+        }
+
+        setStatus(`Uploaded ${files.length} photo${files.length > 1 ? "s" : ""}.`);
+        setResultStatus(`Shelves created: ${payload.shelf_count}`);
+        showResultData(payload);
+      } catch (error) {
+        setStatus(error.message || "Upload failed.", "error");
+        setResultStatus(error.message || "Upload failed.", true);
+      } finally {
+        uploadBtn.disabled = false;
+      }
+    });
+
+    renderFiles([]);
+  </script>
+</body>
+</html>

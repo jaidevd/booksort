@@ -20,10 +20,13 @@ dependencies = [
 "pillow (>=10.4.0,<11.0.0)",
 "torch (>=2.9.0,<3.0.0); sys_platform != 'linux'",
 "torchvision (>=0.24.0,<0.25.0); sys_platform != 'linux'",
+    "fastapi (>=0.115.5,<1.0.0)",
+    "python-multipart (>=0.0.18,<1.0.0)",
     "ultralytics (>=8.3.221,<9.0.0)",
     "ipdb (>=0.13.13,<0.14.0)",
     "ipython (>=9.6.0,<10.0.0)",
-    "jupyter (>=1.1.1,<2.0.0)"
+    "jupyter (>=1.1.1,<2.0.0)",
+    "uvicorn (>=0.38.0,<0.39.0)"
 ]
 
 [tool.poetry]
