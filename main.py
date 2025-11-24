@@ -3,6 +3,9 @@ import json
 import re
 from pathlib import Path
 from typing import Dict, Iterable, List
+import os
+import math
+from PIL import Image
 
 import cv2
 import matplotlib.pyplot as plt
@@ -20,7 +23,9 @@ from ultralytics import YOLO
 BOOK_CLASS_ID = 73  # COCO id for "book"
 MODEL = YOLO("yolo11x-seg.pt", task="segment")
 CACHE_DIR = Path("ocr_cache")
+BOOKS_CACHE_DIR = Path("books_cache")
 SUPPORTED_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
+op = os.path
 
 
 def gather_image_paths(target: str) -> List[str]:
@@ -89,6 +94,21 @@ def longest_edge(rect: np.ndarray) -> float:
     return float(np.max(np.linalg.norm(diffs, axis=1)))
 
 
+def cap_image_size_once(path, quality=85, maxsize=4 * 1024 * 1024):
+    original_size = op.getsize(path)
+    if original_size <= maxsize:
+        return
+
+    scale = math.sqrt(maxsize / original_size)
+
+    img = Image.open(path)
+    w = max(1, int(img.width * scale))
+    h = max(1, int(img.height * scale))
+
+    img.resize((w, h), Image.LANCZOS).save(path, format=img.format,
+                                           quality=quality, optimize=True)
+
+
 def ocr(img_path: str, di_client: DocumentIntelligenceClient | None) -> List[Dict]:
     """Return cached OCR paragraphs with their polygons and centroids."""
     CACHE_DIR.mkdir(exist_ok=True)
@@ -103,6 +123,7 @@ def ocr(img_path: str, di_client: DocumentIntelligenceClient | None) -> List[Dic
             raise RuntimeError(
                 "OCR cache miss. Provide .secrets.json with Azure credentials."
             )
+        cap_image_size_once(img_path)
         with open(img_path, "rb") as fin:
             poller = di_client.begin_analyze_document("prebuilt-read", body=fin)
         result = poller.result()
@@ -128,6 +149,12 @@ def search(query: str, key: str) -> Dict:
     """Query Google Books for `query` and return the first hit's metadata."""
     if not key:
         return {}
+    BOOKS_CACHE_DIR.mkdir(exist_ok=True)
+    cache_key = hashlib.md5(query.encode("utf-8")).hexdigest()
+    cache_path = BOOKS_CACHE_DIR / f"{cache_key}.json"
+    if cache_path.exists():
+        with open(cache_path, "r", encoding="utf-8") as fin:
+            return json.load(fin)
     try:
         response = requests.get(
             "https://www.googleapis.com/books/v1/volumes",
@@ -143,11 +170,15 @@ def search(query: str, key: str) -> Dict:
         response.raise_for_status()
     except requests.RequestException as exc:
         print(f"Google Books search failed for '{query[:40]}': {exc}")
+        with open(cache_path, "w", encoding="utf-8") as fout:
+            json.dump({"error": str(exc)}, fout, indent=2)
         return {}
 
     result = response.json()
     item = result.get("items", [False])[0]
     if not item:
+        with open(cache_path, "w", encoding="utf-8") as fout:
+            json.dump({}, fout, indent=2)
         return {}
 
     record = {"id": item["id"]}
@@ -172,6 +203,8 @@ def search(query: str, key: str) -> Dict:
     record["dimensions"] = detail_info.get("dimensions", {})
     if not record["categories"]:
         record["categories"] = detail_info.get("categories", [])
+    with open(cache_path, "w", encoding="utf-8") as fout:
+        json.dump(record, fout, indent=2)
     return record
 
 
@@ -342,9 +375,9 @@ def assign_shelves(df: pd.DataFrame, n_shelves: int):
     dict
         {shelf_id: list_of_row_indices}
     """
+    if len(df) < n_shelves:
+        return {i: [idx] for i, idx in enumerate(df.index)}
 
-    # ----------- 0. Preprocess authors and genres into categorical IDs -----------
-    # Fill nulls
     authors = df['authors'].fillna("(unknown_author)")
     genres = df['genre'].fillna("(unknown_genre)")
 

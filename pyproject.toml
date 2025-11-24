@@ -1,6 +1,6 @@
 [tool.flake8]
 max-line-length = 99
-extend-ignore = ["T201"]
+extend-ignore = ["T201", "N806"]
 
 [project]
 name = "booksort"

@@ -9,3 +9,4 @@ __pycache__/**
 runs/
 book_detections/
 book_highlights/
+books_cache/*
