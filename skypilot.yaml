@@ -3,10 +3,12 @@ resources:
   cpus: 1+
   memory: 4+
   autostop:
-    idle_minutes: 1
+    idle_minutes: 2
     down: true
 
-workdir: https://github.com/jaidevd/booksort.git
+workdir:
+  url: https://github.com/aftershootco/booksort.git
+  ref: main
 
 name: booksort-train
 
