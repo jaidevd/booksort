@@ -1,0 +1,20 @@
+resources:
+  cloud: gcp
+  cpus: 1+
+  memory: 4+
+  autostop:
+    idle_minutes: 2
+    down: true
+
+workdir: https://github.com/jaidevd/booksort.git
+
+name: booksort-train
+
+setup: |
+  python -m pip install poetry
+  poetry install
+
+# Typical use: make use of resources, such as running training.
+# Invoked under the workdir (i.e., can use its files).
+run: |
+  poetry run python train.py --overwrite-dataset
