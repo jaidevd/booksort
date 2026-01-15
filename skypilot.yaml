@@ -3,7 +3,7 @@ resources:
   cpus: 1+
   memory: 4+
   autostop:
-    idle_minutes: 2
+    idle_minutes: 1
     down: true
 
 workdir: https://github.com/jaidevd/booksort.git
